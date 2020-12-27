@@ -1,9 +1,17 @@
 import React, { Component } from "react";
-import "./App.css";
-
-import Person from "./Person/Person";
+import Cockpit from "./components/Persons/Cockpit/Cockpit";
+import classes from "./App.css";
+import Persons from "./components/Persons/Persons";
+import auxClass from "./hoc/auxClass";
+import Auxiliary from "./hoc/Auxiliary";
+import AuthContext from "./context/auth-context";
 
 class App extends Component {
+	constructor(props) {
+		super(props);
+		console.log("[App.js] constructor");
+	}
+
 	state = {
 		persons: [
 			{ id: "lalala1", name: "Aldo", age: 18 },
@@ -12,7 +20,28 @@ class App extends Component {
 		],
 		otherState: "some other value",
 		showPerson: false,
+		showCockpit: true,
+		changeCounter: 0,
+		authenticated: false,
 	};
+
+	static getDerivedStateFromProps(props, state) {
+		console.log("[App.js] getDerivedStateFromProps", props);
+		return state;
+	}
+
+	componentDidMount() {
+		console.log("[App.js] componentDidMount");
+	}
+
+	shouldComponentUpdate(nextProps, nextState) {
+		console.log("[App.js] shouldComponentUpdate ");
+		return true;
+	}
+
+	componentDidUpdate() {
+		console.log("[App.js] componentDidUpadte");
+	}
 
 	deletePersonHandler = (personIndex) => {
 		// const persons = this.state.persons; // tidak efisien
@@ -37,7 +66,12 @@ class App extends Component {
 		const persons = [...this.state.persons];
 		persons[personIndex] = person;
 
-		this.setState({ persons: persons });
+		this.setState((prevState, props) => {
+			return {
+				persons: persons,
+				changeCounter: prevState.changeCounter + 1,
+			};
+		});
 	};
 
 	togglePersonsHandler = () => {
@@ -45,56 +79,52 @@ class App extends Component {
 		this.setState({ showPerson: !doesShow });
 	};
 
+	loginHandler = () => {
+		this.setState({ authenticated: true });
+	};
+
 	render() {
+		console.log("[App.js] render");
+
 		// cara outsourcing untuk menghasilkan content yang efisien
 		let persons = null;
-
 		if (this.state.showPerson) {
 			persons = (
-				<div>
-					{this.state.persons.map((person, index) => {
-						return (
-							<Person
-								click={() => this.deletePersonHandler(index)}
-								name={person.name}
-								age={person.age}
-								key={person.id} // cara lebih efisien use Key
-								change={(event) => this.nameChangeHandler(event, person.id)}
-							/>
-						);
-					})}
-				</div>
+				<Persons
+					persons={this.state.persons}
+					clicked={this.deletePersonHandler}
+					changed={this.nameChangeHandler}
+					isAuthenticated={this.state.authenticated}
+				/>
 			);
-
-			// style.backgroundColor = "#1e1e7b";
-			// style[":hover"] = {
-			// 	backgroundColor: "#d6d6f5",
-			// 	color: "black",
-			// };
-		}
-
-		let classes = [];
-		if (this.state.persons.length <= 2) {
-			classes.push("red"); // classes ['red']
-		}
-		if (this.state.persons.length <= 1) {
-			classes.push("bold"); // classes ['red', 'bold']
 		}
 
 		return (
-			<div className="App">
-				<h1>Hello World</h1>
-				<p className={classes.join(" ")}>Hi let's learn React</p>
-				<button className="button" onClick={this.togglePersonsHandler}>
-					Toggle Person
+			<Auxiliary>
+				<button
+					onClick={() => {
+						this.setState({ showCockpit: false });
+					}}
+				>
+					Remove Cockpit
 				</button>
+				<AuthContext.Provider value={{ authenticated: this.state.authenticated, Login: this.loginHandler }}>
+					{this.state.showCockpit ? (
+						<Cockpit
+							showPerson={this.state.showPerson}
+							personLength={this.state.persons.length}
+							clicked={this.togglePersonsHandler}
+							// Login={this.loginHandler}
+						/>
+					) : null}
 
-				{persons}
-			</div>
+					{persons}
+				</AuthContext.Provider>
+			</Auxiliary>
 		);
 	}
 
 	// return React.createElement("div", { className: "App" }, React.createElement("h1", null, "Hi Aldo!"));
 }
 
-export default App;
+export default auxClass(App, classes.App);
